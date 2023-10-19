@@ -435,10 +435,10 @@ export default {
         } catch (error) {
           console.warn(`Unable to create PDF link for ${href}: ${error.message}`);
         }
-      } else if (href.endsWith('.tekdownload')) {
+      } else if (href && href.endsWith('.tekdownload')) {
         // link at the bottom for IT pages
         a.remove();
-      } else if (href.startsWith('/photo_display.cfm') && href.endsWith('download=true')) {
+      } else if (href && href.startsWith('/photo_display.cfm') && href.endsWith('download=true')) {
         const urlParams = new URLSearchParams(new URL(url).search);
         const assetId = urlParams.get('photo_id');
         const newPath = `/photo_display/${assetId}`;
