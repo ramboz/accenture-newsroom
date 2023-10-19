@@ -386,8 +386,14 @@ export default {
         },
       });
     } else {
+      const currentPath = new URL(url).pathname;
       // main page import - "element" is provided, i.e. a docx will be created
-      const newPath = decodeURIComponent(new URL(url).pathname).replace('.htm', '');
+      let newPath = decodeURIComponent(currentPath).replace('.htm', '');
+      if (currentPath.startsWith('/photo_display.cfm')) {
+        const urlParams = new URLSearchParams(new URL(url).search);
+        const assetId = urlParams.get('photo_id');
+        newPath = `/photo_display/${assetId}`;
+      }
       const destinationUrl = WebImporter.FileUtils.sanitizePath(newPath);
       results.push({
         element: main,
@@ -432,6 +438,11 @@ export default {
       } else if (href.endsWith('.tekdownload')) {
         // link at the bottom for IT pages
         a.remove();
+      } else if (href.startsWith('/photo_display.cfm') && href.endsWith('download=true')) {
+        const urlParams = new URLSearchParams(new URL(url).search);
+        const assetId = urlParams.get('photo_id');
+        const newPath = `/photo_display/${assetId}`;
+        a.setAttribute('href', `https://main--accenture-newsroom--hlxsites.hlx.page${newPath}`.replace(/\/\//g, '/'));
       }
     });
 
