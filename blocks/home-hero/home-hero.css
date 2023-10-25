@@ -37,9 +37,9 @@
 
 .home-hero.block .home-hero-stripe {
   background-color: #004DFF;
-  height: 110px;
+  height: 52.6px;
   width: 100%;
-  top: 37%;
+  top: 41%;
   left: 0;
   position: absolute;
   z-index: 2;
@@ -187,5 +187,6 @@
 
   .home-hero.block .home-hero-stripe{
     top: 42%;
+    height: 113px;
   }
 }
