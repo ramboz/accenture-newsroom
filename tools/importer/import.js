@@ -336,7 +336,9 @@ export default {
         console.log('found primary match!');
         const nextBrNode = findNextBrOrpNode(primaryMatchingParagraph);
         if (nextBrNode) {
-          nextBrNode.after('---');
+          const abstractDelim = document.createElement('p');
+          abstractDelim.textContent = '---';
+          nextBrNode.insertAdjacentElement('afterend', abstractDelim);
         } else {
           console.log(`${new URL(url).pathname} - abstract not found`);
           abstractNotFound = 'true';
@@ -349,7 +351,9 @@ export default {
           console.log('found secondary match!');
           const nextBrNode = findNextBrOrpNode(secondaryMatchingParagraph);
           if (nextBrNode) {
-            nextBrNode.after('---');
+            const abstractDelim = document.createElement('p');
+            abstractDelim.textContent = '---';
+            nextBrNode.insertAdjacentElement('afterend', abstractDelim);
           } else {
             console.log(`${new URL(url).pathname} - abstract not found`);
             abstractNotFound = 'true';
