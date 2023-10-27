@@ -436,7 +436,7 @@ export default {
     // find internal pdf links
     main.querySelectorAll('a').forEach((a) => {
       const href = a.getAttribute('href');
-      if (href && href.endsWith('.pdf') && (href.includes('newsroom.accenture') || href.startsWith('/'))) {
+      if (href && (href.endsWith('.pdf') || href.endsWith('.tekdownload')) && (href.includes('newsroom.accenture') || href.startsWith('/'))) {
         const newUrl = new URL(url);
         const host = newUrl.searchParams.get('host');
         if (href.startsWith('/')) {
@@ -449,7 +449,8 @@ export default {
           u.searchParams.append('host', u.origin);
           // no "element", the "from" property is provided instead
           // importer will download the "from" resource as "path"
-          const newPath = WebImporter.FileUtils.sanitizePath(u.pathname.replace(/\/\//g, '/'));
+          let newPath = WebImporter.FileUtils.sanitizePath(u.pathname.replace(/\/\//g, '/').replace('.tekdownload', '.pdf'));
+          if (href.endsWith('.tekdownload')) newPath = newPath.replace('/news/', '/content/');
           results.push({
             path: newPath,
             from: `http://localhost:3001${u.pathname.replace(/\/\//g, '/')}${u.search}`,
@@ -460,12 +461,13 @@ export default {
           // you will need to replace "main--repo--owner" by your project setup
           const newHref = new URL(newPath, 'https://main--accenture-newsroom--hlxsites.hlx.page').toString();
           a.setAttribute('href', newHref);
+          if (href.endsWith('.tekdownload')) {
+            const linkContent = a.textContent;
+            a.innerHTML = `<b>${linkContent}</b>`;
+          }
         } catch (error) {
           console.warn(`Unable to create PDF link for ${href}: ${error.message}`);
         }
-      } else if (href && href.endsWith('.tekdownload')) {
-        // link at the bottom for IT pages
-        a.remove();
       } else if (href && href.startsWith('/photo_display.cfm') && href.endsWith('download=true')) {
         const urlParams = new URLSearchParams(new URL(url).search);
         const assetId = urlParams.get('photo_id');
