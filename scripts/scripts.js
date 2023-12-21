@@ -673,14 +673,35 @@ async function loadEager(doc) {
   }
 }
 
+// Add custom event that will trigger if the jQuery is loaded
+export async function loadjQueryScript() {
+  const jqueryReadyEvent = new Event('jQueryReady');
+  const sJquerySrc = '/scripts/jquery-3.5.1.min.js';
+
+  return new Promise((resolve, reject) => {
+    if (!document.querySelector(`head > script[src="${sJquerySrc}"]`)) {
+      const script = document.createElement('script');
+      script.src = sJquerySrc;
+      const loaded = () => {
+        document.dispatchEvent(jqueryReadyEvent);
+        resolve();
+      };
+      script.onload = loaded;
+      script.onerror = reject;
+      document.head.append(script);
+    } else {
+      resolve();
+    }
+  });
+}
+
 async function loadJQueryDateRangePicker() {
   const filterInput = document.querySelector('#newslist-filter-input');
   if (!filterInput) {
     return;
   }
-  // await import('./moment.min.js');
   await loadScript('/scripts/moment.min.js');
-  await loadScript('/scripts/jquery-3.5.1.min.js');
+  await loadjQueryScript();
   await loadScript('/scripts/jquery.daterangepicker-20190409.js');
   await loadCSS('/styles/daterangepicker.css');
 
