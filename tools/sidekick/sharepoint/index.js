@@ -58,13 +58,13 @@ export default class SharepointSDK {
   async signIn() {
     const publicClientApplication = new PublicClientApplication({
       auth: {
-        clientId: 'f4bd8221-936d-4fd8-949a-8c14864bf16a',
+        clientId: 'a5047ece-6169-4aa9-91ed-7f3324c632d0',
         authority: 'https://login.microsoftonline.com/fa7b1b5a-7b34-4387-94ae-d2c178decee1',
       },
     });
 
     await publicClientApplication.loginPopup({
-      redirectUri: '/tools/sidekick/spauth.htm',
+      redirectUri: '/tools/sidekick/sharepoint/auth.html',
     });
 
     const account = publicClientApplication.getAllAccounts()[0];
