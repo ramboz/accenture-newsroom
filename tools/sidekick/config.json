@@ -18,6 +18,14 @@
       "event": "preflight"
     },
     {
+      "id": "publishlater",
+      "title": "Publish Later",
+      "environments": [
+        "dev", "preview"
+      ],
+      "event": "publishlater"
+    },
+    {
       "id": "library",
       "title": "Library",
       "environments": [ "edit" ],

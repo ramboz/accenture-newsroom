@@ -856,6 +856,16 @@ const publishConfirmationHandler = (oSidekick) => {
   observer.observe(oShadowRoot, config);
 };
 
+async function publishLaterListener(ev) {
+  const { publishLater } = await import('../tools/sidekick/authoring.js');
+  publishLater(ev.detail.data, {
+    domain: 'adobe.sharepoint.com',
+    domainId: 'fac8f079-f817-4127-be6b-700b19217904',
+    siteId: 'b1df5119-9614-4126-8064-ab9bd8cef865',
+    rootPath: '/sites/accenture/newsroom/en',
+  });
+}
+
 // Observe helix-sidekick element if already loaded on the html body
 const helixSideKickObserver = () => {
   // const oSidekick = document.querySelector('helix-sidekick');
@@ -863,12 +873,14 @@ const helixSideKickObserver = () => {
   if (sk) {
     // sidekick already loaded
     sk.addEventListener('custom:preflight', preflightListener);
+    sk.addEventListener('custom:publishlater', publishLaterListener);
     publishConfirmationHandler(sk);
   } else {
     // wait for sidekick to be loaded
     document.addEventListener('sidekick-ready', () => {
       const oAddedSidekick = document.querySelector('helix-sidekick');
       oAddedSidekick.addEventListener('custom:preflight', preflightListener);
+      oAddedSidekick.addEventListener('custom:publishlater', publishLaterListener);
       publishConfirmationHandler(oAddedSidekick);
     }, { once: true });
   }
