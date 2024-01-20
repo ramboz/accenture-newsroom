@@ -13,6 +13,22 @@
   gap: 1rem;
 }
 
+.aem-Dialog .form input {
+  box-sizing: border-box;
+  border: 1px solid;
+  margin: .25rem 0;
+}
+
+.aem-Dialog .form input:hover, 
+.aem-Dialog .form input:focus {
+  background-color: var(--overlay-background-color);
+}
+
+.aem-Dialog .form input[type="datetime-local"] + small {
+  align-self: end;
+  color: #888;
+}
+
 .aem-Dialog .field-wrapper {
   display: flex;
   flex-direction: column;
@@ -52,17 +68,6 @@
 .aem-Dialog .button.secondary:hover,
 .aem-Dialog .button.secondary:focus,
 .aem-Dialog .button.secondary:active {
-  background-color: var(--overlay-background-color);
-}
-
-.aem-Dialog input {
-  box-sizing: border-box;
-  border: 1px solid;
-  margin: .5rem 0 1rem;
-}
-
-.aem-Dialog input:hover, 
-.aem-Dialog input:focus {
   background-color: var(--overlay-background-color);
 }
 

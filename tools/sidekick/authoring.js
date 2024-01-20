@@ -89,7 +89,8 @@ async function getPublishLaterModal(existingEntry) {
     }
   }
 
-  const minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000 + DELAY);
+  const tzOffset = new Date().getTimezoneOffset();
+  const minDate = new Date(Date.now() - tzOffset * 60000 + DELAY);
   const input = fragment.querySelector('input[type="datetime-local"]');
   if (input) {
     input.setAttribute('min', minDate.toISOString().slice(0, -8));
@@ -101,10 +102,15 @@ async function getPublishLaterModal(existingEntry) {
     }
   }
 
+  const tzLabel = document.createElement('small');
+  tzLabel.textContent = `Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone} timezone (GMT${tzOffset < 0 ? `+${-tzOffset / 60}` : `-${tzOffset / 60}`}).`;
+  input.after(tzLabel);
+
   const content = fragment.querySelector('form').innerHTML;
 
   const { default: createDialog } = await import('./modal/modal.js');
   const dialog = await createDialog('dialog-modal', header, content, footer);
+  dialog.classList.add('publishlater');
   return dialog;
 }
 
@@ -137,6 +143,8 @@ export async function publishLater(skConfig, spConfig) {
   try {
     cronjobs = await getCronJobs(sdk, 'jobs');
     existing = cronjobs.find((job) => String(job[1]).endsWith(new URL(url).pathname));
+    document.querySelector('helix-sidekick')?.shadowRoot
+      .querySelector('.plugin.publishlater')?.classList.add('update');
   } catch (err) {
     modal.close();
     modal.remove();
