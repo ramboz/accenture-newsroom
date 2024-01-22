@@ -18,15 +18,37 @@ import {
 } from './ui.js';
 import { preview } from './admin.js';
 
+// The path to the crontab file in the content
 const CRONTAB_PATH = '/.helix/crontab.xlsx';
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'Oktober', 'November', 'December'];
-const DELAY = 10 * 60 * 1000; // minimum delay for a publish later job (10 mins)
 
+// Later.js full month names for proper parsing
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'Oktober', 'November', 'December'];
+
+// Minimum delay for a publish later job (10 mins)
+const DELAY = 10 * 60 * 1000;
+
+// The SDK singleton instance
+// eslint-disable-next-line no-underscore-dangle
+let _sdk;
+
+/**
+ * Gets the list of cron jobs from the crontab file.
+ * @param {Onject} sdk An instance of the sharepoint SDK
+ * @param {string} tableName The name of the table to query
+ * @returns an array of arrays containing the table values
+ */
 async function getCronJobs(sdk, tableName) {
   const crontab = await sdk.getTableCells('/.helix/crontab.xlsx', tableName);
   return crontab.values;
 }
 
+/**
+ * Formats the given data into a cronjob entry.
+ * @param {Object} data The data to format
+ * @param {Date} data.datetime The date and time to run this job on
+ * @param {String} data.url The URL of the page to publish
+ * @returns an array of arrays containing job data in the crontab format
+ */
 function formatCronJobData({ datetime, url }) {
   const pad = (n) => n.toString().padStart(2, '0');
   return [[
@@ -35,6 +57,11 @@ function formatCronJobData({ datetime, url }) {
   ]];
 }
 
+/**
+ * Parses a cronjob entry into a usable object.
+ * @param {Array} data The cronjob entry to parse
+ * @returns an object containing the parsed data and having `datetime` and `url` properties
+ */
 function parseCronJobData([datetime, action]) {
   const [, hh, mm, dd, mmm, yyyy] = datetime.match(/at (\d+):(\d+) on the (\d+) day of (\w+) in (\d+)/);
   const localDate = new Date(
@@ -46,16 +73,59 @@ function parseCronJobData([datetime, action]) {
   };
 }
 
+/**
+ * Adds a new publish entry to the crontab file.
+ * @param {Onject} sdk An instance of the sharepoint SDK
+ * @param {string} tableName The name of the table to query
+ * @param {Object} data The data to format
+ * @param {Date} data.datetime The date and time to run this job on
+ * @param {String} data.url The URL of the page to publish
+ */
 async function addPublishJob(sdk, tableName, data) {
   const rows = formatCronJobData(data);
   await sdk.appendRowsToTable(CRONTAB_PATH, tableName, rows);
 }
 
+/**
+ * Updates an existing entry in the crontab file.
+ * @param {Onject} sdk An instance of the sharepoint SDK
+ * @param {string} tableName The name of the table to query
+ * @param {Object} data The data to format
+ * @param {Date} data.datetime The date and time to run this job on
+ * @param {String} data.url The URL of the page to publish
+ * @param {Number} index The index in the table to be updated
+ */
 async function updatePublishJob(sdk, tableName, data, index) {
   const rows = formatCronJobData(data);
   await sdk.updateRowInTable(CRONTAB_PATH, tableName, index, rows);
 }
 
+/**
+ * Gets an authenticate SDK instance.
+ * @param {Object} spConfig The Sharepoint configuration
+ * @param {String} spConfig.domain The Sharepoint domain
+ * @param {String} spConfig.domainId The Sharepoint domain id
+ * @param {String} spConfig.siteId The Sharepoint site id
+ * @param {String} spConfig.rootPath The root path for the content
+ * @returns an authenticated SDk instance
+ */
+async function getSdk(spConfig) {
+  if (_sdk) {
+    return _sdk;
+  }
+
+  const { default: SharepointSDK } = await import(`${window.location.origin}/tools/sidekick/sharepoint/index.js`);
+  _sdk = new SharepointSDK(spConfig);
+
+  await _sdk.signIn();
+  return _sdk;
+}
+
+/**
+ * Loads and formats the publish later modal.
+ * @param {Object} [existingEntry] The existing publish later entry, if any
+ * @returns The formatted modal dialog
+ */
 async function getPublishLaterModal(existingEntry) {
   const response = await fetch('/tools/sidekick/publish-later.plain.html');
   const html = await response.text();
@@ -114,26 +184,28 @@ async function getPublishLaterModal(existingEntry) {
   return dialog;
 }
 
-let sdk;
-
-// eslint-disable-next-line import/prefer-default-export
+/**
+ * Handles the publish later workflow and UI.
+ * @param {Object} skConfig The Sidekick configuration
+ * @param {Object} spConfig The Sharepoint configuration
+ * @param {String} spConfig.domain The Sharepoint domain
+ * @param {String} spConfig.domainId The Sharepoint domain id
+ * @param {String} spConfig.siteId The Sharepoint site id
+ * @param {String} spConfig.rootPath The root path for the content
+ */
 export async function publishLater(skConfig, spConfig) {
   let modal = await wait('Please wait…');
-  if (!sdk) {
-    const { default: SharepointSDK } = await import(`${window.location.origin}/tools/sidekick/sharepoint/index.js`);
-    sdk = new SharepointSDK(spConfig);
 
-    try {
-      await sdk.signIn();
-      console.log('Connected to sharepoint');
-    } catch (err) {
-      sdk = null;
-      modal.close();
-      modal.remove();
-      console.error('Could not log into Sharepoint', err);
-      await acknowledge('Error', 'Could not log into Sharepoint.', 'error');
-      return;
-    }
+  let sdk;
+  try {
+    sdk = await getSdk(spConfig);
+    console.log('Connected to sharepoint');
+  } catch (err) {
+    modal.close();
+    modal.remove();
+    console.error('Could not log into Sharepoint', err);
+    await acknowledge('Error', 'Could not log into Sharepoint.', 'error');
+    return;
   }
 
   const { url } = skConfig.status.preview;
@@ -220,4 +292,72 @@ export async function publishLater(skConfig, spConfig) {
   });
 
   modal.showModal();
+}
+
+/**
+ * Enhances the page info dropdown with additional information about the publishing schedule.
+ * @param {Object} spConfig The Sharepoint configuration
+ * @param {String} spConfig.domain The Sharepoint domain
+ * @param {String} spConfig.domainId The Sharepoint domain id
+ * @param {String} spConfig.siteId The Sharepoint site id
+ * @param {String} spConfig.rootPath The root path for the content
+ */
+export async function enhancePageInfo(spConfig) {
+  // const res = await fetch('https://admin.hlx.page/job/ramboz/accenture-newsroom/publish-later-ui/preview');
+  // const json = await res.json();
+  // console.log(json);
+  const sk = document.querySelector('helix-sidekick');
+  const info = sk.shadowRoot.querySelector('.plugin.page-info');
+  let container = info.querySelector('.crontab-date-container');
+  let date = container?.querySelector('time');
+  if (!container) {
+    container = document.createElement('div');
+    container.classList.add('crontab-date-container');
+
+    const label = document.createElement('span');
+    label.textContent = 'Scheduled: ';
+    container.append(label);
+
+    date = document.createElement('time');
+    date.textContent = '…';
+    container.append(date);
+
+    info.append(container);
+  }
+
+  let sdk;
+  try {
+    sdk = await getSdk(spConfig);
+  } catch (err) {
+    console.error('Could not log into Sharepoint', err);
+    return;
+  }
+
+  let cronjobs;
+  let existing;
+  try {
+    const url = window.location.href;
+    cronjobs = await getCronJobs(sdk, 'jobs');
+    existing = cronjobs.find((job) => String(job[1]).endsWith(new URL(url).pathname));
+    document.querySelector('helix-sidekick')?.shadowRoot
+      .querySelector('.plugin.publishlater')?.classList.add('update');
+  } catch (err) {
+    await acknowledge('Error', 'Could not retrieve cron jobs.', 'error');
+    return;
+  }
+
+  if (!existing) {
+    date.textContent = 'Never';
+    return;
+  }
+
+  const { datetime } = parseCronJobData(existing);
+  date.setAttribute('datetime', datetime.toISOString());
+  date.textContent = new Intl.DateTimeFormat('default', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  }).format(datetime);
 }

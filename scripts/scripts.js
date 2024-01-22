@@ -866,14 +866,30 @@ async function publishLaterListener(ev) {
   });
 }
 
+async function pageInfoEnhancer() {
+  const { enhancePageInfo } = await import('../tools/sidekick/authoring.js');
+  enhancePageInfo({
+    domain: 'adobe.sharepoint.com',
+    domainId: 'fac8f079-f817-4127-be6b-700b19217904',
+    siteId: 'b1df5119-9614-4126-8064-ab9bd8cef865',
+    rootPath: '/sites/accenture/newsroom/en',
+  });
+}
+
 // Observe helix-sidekick element if already loaded on the html body
 const helixSideKickObserver = () => {
-  // const oSidekick = document.querySelector('helix-sidekick');
+  const observer = new MutationObserver((mutations) => {
+    if (!mutations.pop().target.classList.contains('dropdown-expanded')) {
+      return;
+    }
+    pageInfoEnhancer();
+  });
   const sk = document.querySelector('helix-sidekick');
   if (sk) {
     // sidekick already loaded
     sk.addEventListener('custom:preflight', preflightListener);
     sk.addEventListener('custom:publishlater', publishLaterListener);
+    observer.observe(sk.shadowRoot.querySelector('.plugin.info'), { attributes: true, attributeFilter: ['class'] });
     publishConfirmationHandler(sk);
   } else {
     // wait for sidekick to be loaded
@@ -881,6 +897,7 @@ const helixSideKickObserver = () => {
       const oAddedSidekick = document.querySelector('helix-sidekick');
       oAddedSidekick.addEventListener('custom:preflight', preflightListener);
       oAddedSidekick.addEventListener('custom:publishlater', publishLaterListener);
+      observer.observe(oAddedSidekick.shadowRoot.querySelector('.plugin.info'), { attributes: true, attributeFilter: ['class'] });
       publishConfirmationHandler(oAddedSidekick);
     }, { once: true });
   }
