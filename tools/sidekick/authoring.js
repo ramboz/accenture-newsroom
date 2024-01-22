@@ -222,8 +222,6 @@ export async function publishLater(skConfig) {
   try {
     cronjobs = await getCronJobs(sdk, 'jobs');
     existing = cronjobs.find((job) => String(job[1]).endsWith(new URL(url).pathname));
-    document.querySelector('helix-sidekick')?.shadowRoot
-      .querySelector('.plugin.publishlater')?.classList.add('update');
   } catch (err) {
     modal.close();
     modal.remove();
@@ -341,8 +339,6 @@ export async function enhancePageInfo() {
     const url = window.location.href;
     cronjobs = await getCronJobs(sdk, 'jobs');
     existing = cronjobs.find((job) => String(job[1]).endsWith(new URL(url).pathname));
-    document.querySelector('helix-sidekick')?.shadowRoot
-      .querySelector('.plugin.publishlater')?.classList.add('update');
   } catch (err) {
     await acknowledge('Error', 'Could not retrieve cron jobs.', 'error');
     return;
