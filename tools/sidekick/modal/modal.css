@@ -41,10 +41,10 @@
   height: unset;
   width: unset;
   border: 1px solid;
-  padding: 5px 30px;
+  padding: 12px 10px;
   font-size: unset;
   text-transform: unset;
-  font-family: var(--header-font-family-regular);
+  font-family: var(--body-font-family);
 }
 
 .aem-Dialog .button.cta {
@@ -95,9 +95,9 @@
 }
 
 .aem-Dialog header :is(h1, h2, h3) {
-  margin: 0 0 1rem;
+  margin: 0 0 .25rem;
   color: initial;
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .aem-Dialog header .icon-x,
