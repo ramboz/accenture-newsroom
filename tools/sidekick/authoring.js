@@ -18,6 +18,16 @@ import {
 } from './ui.js';
 import { preview } from './admin.js';
 
+// The Sharepoint configuration
+const SHAREPOINT_CONFIG = {
+  authority: 'https://login.microsoftonline.com/fa7b1b5a-7b34-4387-94ae-d2c178decee1',
+  clientId: 'a5047ece-6169-4aa9-91ed-7f3324c632d0',
+  domain: 'adobe.sharepoint.com',
+  domainId: 'fac8f079-f817-4127-be6b-700b19217904',
+  siteId: 'b1df5119-9614-4126-8064-ab9bd8cef865',
+  rootPath: '/sites/accenture/newsroom/en',
+};
+
 // The path to the crontab file in the content
 const CRONTAB_PATH = '/.helix/crontab.xlsx';
 
@@ -102,22 +112,24 @@ async function updatePublishJob(sdk, tableName, data, index) {
 
 /**
  * Gets an authenticate SDK instance.
- * @param {Object} spConfig The Sharepoint configuration
- * @param {String} spConfig.domain The Sharepoint domain
- * @param {String} spConfig.domainId The Sharepoint domain id
- * @param {String} spConfig.siteId The Sharepoint site id
- * @param {String} spConfig.rootPath The root path for the content
  * @returns an authenticated SDk instance
  */
-async function getSdk(spConfig) {
+async function getSdk() {
   if (_sdk) {
     return _sdk;
   }
 
+  const spConfig = {
+    domain: SHAREPOINT_CONFIG.domain,
+    domainId: SHAREPOINT_CONFIG.domainId,
+    siteId: SHAREPOINT_CONFIG.siteId,
+    rootPath: SHAREPOINT_CONFIG.rootPath,
+  };
+
   const { default: SharepointSDK } = await import(`${window.location.origin}/tools/sidekick/sharepoint/index.js`);
   _sdk = new SharepointSDK(spConfig);
 
-  await _sdk.signIn();
+  await _sdk.signIn(SHAREPOINT_CONFIG.clientId, SHAREPOINT_CONFIG.authority);
   return _sdk;
 }
 
@@ -187,18 +199,13 @@ async function getPublishLaterModal(existingEntry) {
 /**
  * Handles the publish later workflow and UI.
  * @param {Object} skConfig The Sidekick configuration
- * @param {Object} spConfig The Sharepoint configuration
- * @param {String} spConfig.domain The Sharepoint domain
- * @param {String} spConfig.domainId The Sharepoint domain id
- * @param {String} spConfig.siteId The Sharepoint site id
- * @param {String} spConfig.rootPath The root path for the content
  */
-export async function publishLater(skConfig, spConfig) {
+export async function publishLater(skConfig) {
   let modal = await wait('Please wait…');
 
   let sdk;
   try {
-    sdk = await getSdk(spConfig);
+    sdk = await getSdk();
     console.log('Connected to sharepoint');
   } catch (err) {
     modal.close();
@@ -296,13 +303,8 @@ export async function publishLater(skConfig, spConfig) {
 
 /**
  * Enhances the page info dropdown with additional information about the publishing schedule.
- * @param {Object} spConfig The Sharepoint configuration
- * @param {String} spConfig.domain The Sharepoint domain
- * @param {String} spConfig.domainId The Sharepoint domain id
- * @param {String} spConfig.siteId The Sharepoint site id
- * @param {String} spConfig.rootPath The root path for the content
  */
-export async function enhancePageInfo(spConfig) {
+export async function enhancePageInfo() {
   // const res = await fetch('https://admin.hlx.page/job/ramboz/accenture-newsroom/publish-later-ui/preview');
   // const json = await res.json();
   // console.log(json);
@@ -327,7 +329,7 @@ export async function enhancePageInfo(spConfig) {
 
   let sdk;
   try {
-    sdk = await getSdk(spConfig);
+    sdk = await getSdk();
   } catch (err) {
     console.error('Could not log into Sharepoint', err);
     return;

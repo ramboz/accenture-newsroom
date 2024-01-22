@@ -858,22 +858,12 @@ const publishConfirmationHandler = (oSidekick) => {
 
 async function publishLaterListener(ev) {
   const { publishLater } = await import('../tools/sidekick/authoring.js');
-  publishLater(ev.detail.data, {
-    domain: 'adobe.sharepoint.com',
-    domainId: 'fac8f079-f817-4127-be6b-700b19217904',
-    siteId: 'b1df5119-9614-4126-8064-ab9bd8cef865',
-    rootPath: '/sites/accenture/newsroom/en',
-  });
+  publishLater(ev.detail.data);
 }
 
 async function pageInfoEnhancer() {
   const { enhancePageInfo } = await import('../tools/sidekick/authoring.js');
-  enhancePageInfo({
-    domain: 'adobe.sharepoint.com',
-    domainId: 'fac8f079-f817-4127-be6b-700b19217904',
-    siteId: 'b1df5119-9614-4126-8064-ab9bd8cef865',
-    rootPath: '/sites/accenture/newsroom/en',
-  });
+  enhancePageInfo();
 }
 
 // Observe helix-sidekick element if already loaded on the html body
