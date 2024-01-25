@@ -861,6 +861,11 @@ async function publishLaterListener(ev) {
   publishLater(ev.detail.data);
 }
 
+async function publishLaterAllListener(ev) {
+  const { publishLaterList } = await import('../tools/sidekick/authoring.js');
+  publishLaterList(ev.detail.data);
+}
+
 async function pageInfoEnhancer() {
   const { enhancePageInfo } = await import('../tools/sidekick/authoring.js');
   enhancePageInfo();
@@ -879,6 +884,7 @@ const helixSideKickObserver = () => {
     // sidekick already loaded
     sk.addEventListener('custom:preflight', preflightListener);
     sk.addEventListener('custom:publishlater', publishLaterListener);
+    sk.addEventListener('custom:publishlater-all', publishLaterAllListener);
     observer.observe(sk.shadowRoot.querySelector('.plugin.info'), { attributes: true, attributeFilter: ['class'] });
     publishConfirmationHandler(sk);
   } else {
@@ -887,6 +893,7 @@ const helixSideKickObserver = () => {
       const oAddedSidekick = document.querySelector('helix-sidekick');
       oAddedSidekick.addEventListener('custom:preflight', preflightListener);
       oAddedSidekick.addEventListener('custom:publishlater', publishLaterListener);
+      oAddedSidekick.addEventListener('custom:publishlater-all', publishLaterAllListener);
       observer.observe(oAddedSidekick.shadowRoot.querySelector('.plugin.info'), { attributes: true, attributeFilter: ['class'] });
       publishConfirmationHandler(oAddedSidekick);
     }, { once: true });

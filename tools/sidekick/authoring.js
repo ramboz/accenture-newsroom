@@ -42,6 +42,22 @@ const DELAY = 10 * 60 * 1000;
 let _sdk;
 
 /**
+ * Formats the datetime into a human readable string.
+ * @param {Date} datetime the date to format
+ * @param {String} [timeZone] the timezone to use for formatting
+ * @returns a human readable string for the date.
+ */
+function formatDateTime(datetime, timeZone) {
+  return new Intl.DateTimeFormat('default', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    timeZone,
+  }).format(datetime);
+}
+/**
  * Gets the list of cron jobs from the crontab file.
  * @param {Onject} sdk An instance of the sharepoint SDK
  * @param {string} tableName The name of the table to query
@@ -70,7 +86,8 @@ function formatCronJobData({ datetime, url }) {
 /**
  * Parses a cronjob entry into a usable object.
  * @param {Array} data The cronjob entry to parse
- * @returns an object containing the parsed data and having `datetime` and `url` properties
+ * @returns an object containing the parsed data and
+ *          having `datetime`, `action` and `url` properties
  */
 function parseCronJobData([datetime, action]) {
   const [, hh, mm, dd, mmm, yyyy] = datetime.match(/at (\d+):(\d+) on the (\d+) day of (\w+) in (\d+)/);
@@ -80,6 +97,7 @@ function parseCronJobData([datetime, action]) {
   return {
     datetime: localDate,
     url: `${window.location.origin}${action.split(' ').pop()}`,
+    action: action.split(' ').shift(),
   };
 }
 
@@ -351,11 +369,74 @@ export async function enhancePageInfo() {
 
   const { datetime } = parseCronJobData(existing);
   date.setAttribute('datetime', datetime.toISOString());
-  date.textContent = new Intl.DateTimeFormat('default', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-  }).format(datetime);
+  date.textContent = formatDateTime(datetime);
+}
+
+export async function publishLaterList() {
+  const modal = await wait('Please wait…');
+
+  let sdk;
+  try {
+    sdk = await getSdk();
+    console.log('Connected to sharepoint');
+  } catch (err) {
+    modal.close();
+    modal.remove();
+    console.error('Could not log into Sharepoint', err);
+    await acknowledge('Error', 'Could not log into Sharepoint.', 'error');
+    return;
+  }
+
+  let cronjobs;
+  try {
+    cronjobs = await getCronJobs(sdk, 'jobs');
+  } catch (err) {
+    modal.close();
+    modal.remove();
+    await acknowledge('Error', 'Could not retrieve cron jobs.', 'error');
+    return;
+  }
+
+  modal.close();
+  modal.remove();
+
+  const jobsList = cronjobs.slice(1).map((job) => {
+    try {
+      return parseCronJobData(job);
+    } catch (err) {
+      return null;
+    }
+  }).filter((job) => job && job.datetime > Date.now() && job.action === 'publish')
+    .sort((a, b) => a.datetime - b.datetime);
+
+  const res = await fetch('/tools/sidekick/publish-later-list.plain.html');
+  const html = await res.text();
+
+  const fragment = document.createElement('div');
+  fragment.innerHTML = html;
+
+  const table = fragment.querySelector('.table');
+  jobsList.forEach((job) => {
+    const url = new URL(job.url);
+    table.innerHTML += `<div>
+      <div>${formatDateTime(job.datetime, 'UTC')}</div>
+      <div><a href="${url.pathname}" target="_blank">${url.pathname}</a></div>
+    </div>`;
+  });
+
+  const header = fragment.querySelector('h1,h2,h3');
+  header.remove();
+
+  decorateSections(fragment);
+  decorateBlocks(fragment);
+  await loadBlocks(fragment);
+  if (!jobsList.length) {
+    table.querySelector('table tbody').innerHTML += '<tr><td colspan="2"><em>No scheduled jobs</em></td></tr>';
+  }
+
+  const content = fragment.firstElementChild;
+  const { default: createDialog } = await import('./modal/modal.js');
+  const dialog = await createDialog('dialog-modal', header, content, null);
+  dialog.classList.add('publishlater-all');
+  dialog.showModal();
 }
