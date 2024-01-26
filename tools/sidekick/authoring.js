@@ -102,6 +102,15 @@ function parseCronJobData([datetime, action]) {
 }
 
 /**
+ * Returns a string with the message about the current timezone.
+ * @returns a message with the current timezone
+ */
+function getTimezoneMessage() {
+  const tzOffset = new Date().getTimezoneOffset();
+  return `Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone} timezone (GMT${tzOffset < 0 ? `+${-tzOffset / 60}` : `-${tzOffset / 60}`}).`
+}
+
+/**
  * Adds a new publish entry to the crontab file.
  * @param {Onject} sdk An instance of the sharepoint SDK
  * @param {string} tableName The name of the table to query
@@ -203,7 +212,7 @@ async function getPublishLaterModal(existingEntry) {
   }
 
   const tzLabel = document.createElement('small');
-  tzLabel.textContent = `Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone} timezone (GMT${tzOffset < 0 ? `+${-tzOffset / 60}` : `-${tzOffset / 60}`}).`;
+  tzLabel.textContent = getTimezoneMessage();
   input.after(tzLabel);
 
   const content = fragment.querySelector('form').innerHTML;
@@ -430,6 +439,11 @@ export async function publishLaterList() {
   decorateSections(fragment);
   decorateBlocks(fragment);
   await loadBlocks(fragment);
+
+  const tzLabel = document.createElement('small');
+  tzLabel.textContent = getTimezoneMessage();
+  table.querySelector('table').after(tzLabel);
+
   if (!jobsList.length) {
     table.querySelector('table tbody').innerHTML += '<tr><td colspan="2"><em>No scheduled jobs</em></td></tr>';
   }
